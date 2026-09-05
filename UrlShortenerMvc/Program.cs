@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using UrlShortenerMvc.Data;
 using UrlShortenerMvc.Models;
 using UrlShortenerMvc.Services;
+using UrlShortenerMvc.Services.ClickTracking;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +33,9 @@ builder.Services.AddSingleton<IUrlValidationService, UrlValidationService>();
 builder.Services.AddSingleton<IShortCodeGenerator, ShortCodeGenerator>();
 builder.Services.AddScoped<ILinkService, LinkService>();
 builder.Services.AddSingleton<IGeoIpService, GeoIpService>();
+builder.Services.AddSingleton<IClickQueue, ClickQueue>();
+builder.Services.AddHostedService<ClickWorker>();
+
 
 var app = builder.Build();
 

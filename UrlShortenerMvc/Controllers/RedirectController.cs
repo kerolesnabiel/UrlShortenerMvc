@@ -5,13 +5,15 @@ using Microsoft.Extensions.Caching.Distributed;
 using UrlShortenerMvc.Data;
 using UrlShortenerMvc.Models;
 using UrlShortenerMvc.Services;
+using UrlShortenerMvc.Services.ClickTracking;
 
 namespace UrlShortenerMvc.Controllers;
 
 public class RedirectController(
     IDistributedCache cache,
     ApplicationDbContext dbContext,
-    IGeoIpService geoIpService) : Controller
+    IGeoIpService geoIpService,
+    IClickQueue clickQueue) : Controller
 {
     [HttpGet("/{shortCode}")]
     public async Task<IActionResult> Index(string shortCode, CancellationToken cancellationToken)
@@ -45,28 +47,13 @@ public class RedirectController(
         }
 
         if (link.TracksClicks)
-        {
-            var click = new Click
-            {
-                LinkId = link.Id,
-                Timestamp = DateTime.UtcNow,
-                Referrer = Request.Headers.Referer.FirstOrDefault(),
-                UserAgent = Request.Headers.UserAgent.FirstOrDefault(),
-                Country = geoIpService.GetCountry(HttpContext.Connection.RemoteIpAddress)
-            };
-
-            dbContext.Clicks.Add(click);
-
-            await dbContext.Database.ExecuteSqlInterpolatedAsync(
-                $"""
-                UPDATE Links
-                SET ClickCount = ClickCount + 1
-                WHERE Id = {link.Id}
-                """,
-                cancellationToken);
-
-            await dbContext.SaveChangesAsync(cancellationToken);
-        }
+            await clickQueue.EnqueueAsync(new ClickEvent(
+                link.Id,
+                DateTime.UtcNow,
+                Request.Headers.Referer.FirstOrDefault(),
+                Request.Headers.UserAgent.FirstOrDefault(),
+                geoIpService.GetCountry(HttpContext.Connection.RemoteIpAddress)
+                ), cancellationToken);
 
         return Redirect(link.OriginalUrl);
     }
