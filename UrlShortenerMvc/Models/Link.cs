@@ -17,4 +17,6 @@ public class Link
     public bool IsActive { get; set; } = true;
 
     public long ClickCount { get; set; } = 0L;
+
+    public ICollection<Click> Clicks { get; set; } = [];
 }

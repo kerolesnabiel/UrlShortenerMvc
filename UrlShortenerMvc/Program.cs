@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using UrlShortenerMvc.Data;
 using UrlShortenerMvc.Models;
@@ -21,6 +22,10 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.InstanceName = "UrlShortener:";
 });
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+});
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<IUrlValidationService, UrlValidationService>();
@@ -41,6 +46,7 @@ else
     app.UseHsts();
 }
 
+app.UseForwardedHeaders();
 app.UseHttpsRedirection();
 app.UseRouting();
 

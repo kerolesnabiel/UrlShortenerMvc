@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using UrlShortenerMvc.Data;
+using UrlShortenerMvc.Models;
 
 namespace UrlShortenerMvc.Controllers;
 
@@ -41,7 +42,26 @@ public class RedirectController(IDistributedCache cache, ApplicationDbContext db
 
         if (link.TracksClicks)
         {
-            // will add tracking later
+            var click = new Click
+            {
+                LinkId = link.Id,
+                Timestamp = DateTime.UtcNow,
+                Referrer = Request.Headers.Referer.FirstOrDefault(),
+                UserAgent = Request.Headers.UserAgent.FirstOrDefault(),
+                Country = null // will implement it next
+            };
+
+            dbContext.Clicks.Add(click);
+
+            await dbContext.Database.ExecuteSqlInterpolatedAsync(
+                $"""
+                UPDATE Links
+                SET ClickCount = ClickCount + 1
+                WHERE Id = {link.Id}
+                """,
+                cancellationToken);
+
+            await dbContext.SaveChangesAsync(cancellationToken);
         }
 
         return Redirect(link.OriginalUrl);

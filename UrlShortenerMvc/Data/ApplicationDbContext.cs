@@ -9,6 +9,7 @@ namespace UrlShortenerMvc.Data
         : IdentityDbContext<User, IdentityRole<Guid>, Guid>(options)
     {
         public DbSet<Link> Links => Set<Link>();
+        public DbSet<Click> Clicks => Set<Click>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -32,6 +33,40 @@ namespace UrlShortenerMvc.Data
                     .WithMany()
                     .HasForeignKey(x => x.UserId)
                     .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasMany(x => x.Clicks)
+                    .WithOne()
+                    .HasForeignKey(x => x.LinkId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            builder.Entity<Click>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.Property(x => x.Id)
+                    .ValueGeneratedOnAdd();
+
+                entity.Property(x => x.Timestamp)
+                    .HasColumnType("datetime2")
+                    .IsRequired();
+
+                entity.Property(x => x.Referrer)
+                    .HasMaxLength(500)
+                    .IsUnicode()
+                    .IsRequired(false);
+
+                entity.Property(x => x.UserAgent)
+                    .HasMaxLength(500)
+                    .IsUnicode()
+                    .IsRequired(false);
+
+                entity.Property(x => x.Country)
+                    .HasColumnType("char(2)")
+                    .IsFixedLength()
+                    .IsUnicode(false)
+                    .IsRequired(false);
+
+                entity.HasIndex(x => new { x.LinkId, x.Timestamp });
             });
         }
     }
