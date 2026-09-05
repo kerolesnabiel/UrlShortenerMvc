@@ -1,8 +1,348 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Home";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+@section Styles {
+    <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
+}
+
+<section class="hero-section">
+    <div class="hero-glow hero-glow-one"></div>
+    <div class="hero-glow hero-glow-two"></div>
+
+    <div class="container hero-container">
+
+        <div class="hero-badge">
+            <span class="status-dot"></span>
+            Fast, simple &amp; privacy-friendly
+        </div>
+
+        <h1 class="hero-title">
+            Turn long URLs into
+            <span class="hero-gradient-text">short links.</span>
+        </h1>
+
+        <p class="hero-subtitle">
+            Create clean, memorable links in seconds.
+            No account required.
+            Anonymous links are limited and do not include link tracking.
+        </p>
+
+        <div class="hero-actions">
+            <a class="btn btn-hero-primary" href="/Links/Create">
+                Shorten a link
+                <span aria-hidden="true">→</span>
+            </a>
+
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a class="btn btn-hero-secondary" href="/Links">
+                    Manage my links
+                </a>
+            }
+            else
+            {
+                <a class="btn btn-hero-secondary" asp-area="Identity" asp-page="/Account/Register">
+                    Create an account
+                </a>
+            }
+        </div>
+
+        <div class="hero-note">
+            <span>✓</span> No account needed
+            <span>✓</span> No tracking for anonymous links
+            <span>✓</span> Simple by design
+        </div>
+
+
+        <!-- Product Preview -->
+        <div class="product-preview">
+
+            <div class="preview-window">
+
+                <div class="preview-toolbar">
+
+                    <div class="window-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+
+                    <div class="preview-url">
+                        short.runasp.net
+                    </div>
+
+                    <div class="preview-toolbar-spacer"></div>
+
+                </div>
+
+
+                <div class="preview-body">
+
+                    <div class="preview-label">
+                        Shorten your URL
+                    </div>
+
+                    <div class="preview-form">
+
+                        <div class="preview-input">
+                            <span class="preview-link-icon">↗</span>
+
+                            <span>
+                                https://example.com/your/very/long/url
+                            </span>
+                        </div>
+
+                        <div class="preview-button">
+                            Shorten
+                        </div>
+
+                    </div>
+
+
+                    <div class="preview-result">
+
+                        <div>
+
+                            <div class="result-label">
+                                Your short link
+                            </div>
+
+                            <div class="result-link">
+                                short.runasp.net/x7Kp2
+                            </div>
+
+                        </div>
+
+                        <div class="copy-pill">
+                            Copy
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- Features -->
+<section class="features-section" id="features">
+
+    <div class="container">
+
+        <div class="section-heading">
+
+            <span class="section-eyebrow">
+                WHY USE IT
+            </span>
+
+            <h2>
+                Everything you need.
+                Nothing you don't.
+            </h2>
+
+            <p>
+                A focused URL shortener built around
+                speed, simplicity, and control.
+            </p>
+
+        </div>
+
+
+        <div class="row g-4">
+
+            <div class="col-md-4">
+
+                <article class="feature-card">
+
+                    <div class="feature-icon icon-purple">
+                        ↗
+                    </div>
+
+                    <h3>
+                        Short &amp; memorable
+                    </h3>
+
+                    <p>
+                        Transform long, messy URLs into links
+                        that are easy to share and remember.
+                    </p>
+
+                </article>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <article class="feature-card">
+
+                    <div class="feature-icon icon-blue">
+                        ⚡
+                    </div>
+
+                    <h3>
+                        Instantly simple
+                    </h3>
+
+                    <p>
+                        Paste a URL, create your short link,
+                        and get back to what you were doing.
+                    </p>
+
+                </article>
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <article class="feature-card">
+
+                    <div class="feature-icon icon-green">
+                        ◇
+                    </div>
+
+                    <h3>
+                        Privacy-friendly
+                    </h3>
+
+                    <p>
+                        Anonymous creation is available with
+                        limits, without link tracking or analytics.
+                    </p>
+
+                </article>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- How it works -->
+<section class="steps-section" id="how-it-works">
+
+    <div class="container">
+
+        <div class="section-heading">
+
+            <span class="section-eyebrow">
+                HOW IT WORKS
+            </span>
+
+            <h2>
+                Three seconds. Three steps.
+            </h2>
+
+        </div>
+
+
+        <div class="steps-grid">
+
+            <div class="step">
+
+                <div class="step-number">
+                    01
+                </div>
+
+                <div>
+
+                    <h3>
+                        Paste your URL
+                    </h3>
+
+                    <p>
+                        Drop your long link into the creator.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="step">
+
+                <div class="step-number">
+                    02
+                </div>
+
+                <div>
+
+                    <h3>
+                        Create your link
+                    </h3>
+
+                    <p>
+                        We generate a compact short URL for you.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="step">
+
+                <div class="step-number">
+                    03
+                </div>
+
+                <div>
+
+                    <h3>
+                        Share it anywhere
+                    </h3>
+
+                    <p>
+                        Copy it and share it wherever you need.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- Final CTA -->
+<section class="cta-section">
+
+    <div class="container">
+
+        <div class="cta-card">
+
+            <div>
+
+                <span class="section-eyebrow">
+                    READY?
+                </span>
+
+                <h2>
+                    Make your first short link.
+                </h2>
+
+                <p>
+                    No sign-up required for anonymous link creation.
+                </p>
+
+            </div>
+
+
+            <a class="btn btn-hero-primary" href="/Links/Create">
+                Create a link
+                <span aria-hidden="true">→</span>
+            </a>
+
+        </div>
+
+    </div>
+
+</section>
