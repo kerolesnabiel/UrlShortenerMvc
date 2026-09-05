@@ -1,9 +1,10 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using UrlShortenerMvc.Data;
-using UrlShortenerMvc.Models;
 using UrlShortenerMvc.Services;
 using UrlShortenerMvc.Services.ClickTracking;
 
@@ -15,6 +16,8 @@ public class RedirectController(
     IGeoIpService geoIpService,
     IClickQueue clickQueue) : Controller
 {
+    [AllowAnonymous]
+    [EnableRateLimiting("Redirect")]
     [HttpGet("/{shortCode}")]
     public async Task<IActionResult> Index(string shortCode, CancellationToken cancellationToken)
     {

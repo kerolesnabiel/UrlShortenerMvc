@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using UrlShortenerMvc.Services;
 using UrlShortenerMvc.ViewModels;
 
@@ -19,11 +20,10 @@ public class LinksController(
 
 
     [AllowAnonymous]
+    [EnableRateLimiting("CreateLink")]
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(
-        CreateLinkViewModel model,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> Create(CreateLinkViewModel model, CancellationToken cancellationToken)
     {
         model.IsAnonymous = User.Identity?.IsAuthenticated != true;
 
@@ -33,7 +33,8 @@ public class LinksController(
         var uriValidationResult = await urlValidationService.ValidateAsync(model.OriginalUrl, cancellationToken);
         if (!uriValidationResult.IsValid)
         {
-            ModelState.AddModelError(nameof(model.OriginalUrl), uriValidationResult.ErrorMessage ?? "The URL is invalid.");
+            ModelState.AddModelError(nameof(model.OriginalUrl),
+                uriValidationResult.ErrorMessage ?? "The URL is invalid.");
             return View(model);
         }
 
@@ -55,14 +56,15 @@ public class LinksController(
                 ModelState.AddModelError(nameof(model.ExpirationDays), "Invalid expiration period.");
                 return View(model);
             }
+
             expiresAt = DateTime.UtcNow.AddDays(days);
         }
 
         var link = await linkService.CreateAsync(
-                    uriValidationResult.NormalizedUrl!,
-                    userId,
-                    expiresAt,
-                    cancellationToken);
+            uriValidationResult.NormalizedUrl!,
+            userId,
+            expiresAt,
+            cancellationToken);
 
         model.ShortUrl = BuildShortUrl(link.ShortCode);
 
@@ -73,5 +75,4 @@ public class LinksController(
     {
         return $"{Request.Scheme}://{Request.Host}/{shortCode}";
     }
-
 }
