@@ -1,0 +1,212 @@
+@using UrlShortenerMvc.ViewModels
+@model CreateLinkViewModel
+
+@{
+    ViewData["Title"] = "Create a short link";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/links-create.css" asp-append-version="true" />
+}
+
+
+<div class="create-page">
+    <div class="container">
+        <div class="create-container">
+            <!-- Header -->
+            <div class="create-header">
+                <a asp-controller="Home" asp-action="Index" class="back-link">
+                    <span>←</span>Back to home
+                </a>
+                <div class="create-badge">
+                    <span class="create-badge-dot"></span>
+                    @(Model.IsAnonymous ? "Anonymous mode" : "Your account")
+                </div>
+                <h1>Shorten your URL.</h1>
+                <p>Paste a long URL below and we'll turn it into a clean, shareable link.</p>
+            </div>
+
+            <!-- Card -->
+            <div class="create-card">
+                @if (Model.CreatedSuccessfully)
+                {
+                    <div class="success-state">
+                        <div class="success-icon">✓</div>
+                        <div class="success-heading">
+                            <span class="success-label">Your link is ready</span>
+                            <h2>Short link created.</h2>
+                        </div>
+
+                        <div class="short-url-box">
+                            <div class="short-url-content">
+                                <span class="short-url-label">Short URL</span>
+                                <a href="@Model.ShortUrl" target="_blank" rel="noopener noreferrer" class="short-url">
+                                    @Model.ShortUrl
+                                </a>
+                            </div>
+                            <button type="button" class="copy-button" data-copy-url=@Model.ShortUrl>
+                                <span class="copy-icon">⧉</span>
+                                <span class="copy-text">Copy</span>
+                            </button>
+                        </div>
+
+                        @if (Model.IsAnonymous)
+                        {
+                            <div class="anonymous-info">
+                                <div class="info-icon">i</div>
+                                <div>
+                                    <strong>Anonymous link</strong>
+                                    <p>
+                                        This link was created without an account.
+                                        Anonymous links are limited and do not include click tracking.
+                                    </p>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="authenticated-info">
+                                <div class="info-icon">✓</div>
+                                <div>
+                                    <strong>Saved to your account</strong>
+                                    <p>You can manage this link from your links dashboard.</p>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="success-actions">
+                            <a href="@Model.ShortUrl" target="_blank" rel="noopener noreferrer" class="open-link-button">
+                                Open link <span>↗</span>
+                            </a>
+                            <a asp-action="Create" class="create-another-button">Create another</a>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <!-- Create form -->
+                    <form asp-action="Create" method="post" class="create-form">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+                        <div class="form-group">
+                            <label asp-for="OriginalUrl">Destination URL</label>
+                            <div class="url-input-wrapper">
+                                <span class="url-input-icon">↗</span>
+                                <input asp-for="OriginalUrl" class="url-input"
+                                       placeholder="https://example.com/your-long-url" autocomplete="url" autofocus />
+                            </div>
+                            <span asp-validation-for="OriginalUrl" class="field-validation"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="ExpirationDays">Link expiration</label>
+                            <select asp-for="ExpirationDays" class="expiration-select">
+                                <option value="">Never expires</option>
+                                <option value="1">After 1 day</option>
+                                <option value="7">After 7 days</option>
+                                <option value="30">After 30 days</option>
+                            </select>
+                            <span class="field-hint">
+                                You can choose when the link should stop redirecting.
+                            </span>
+                        </div>
+
+                        @if (Model.IsAnonymous)
+                        {
+                            <div class="anonymous-notice">
+                                <div class="notice-icon">◇</div>
+                                <div>
+                                    <strong>Creating anonymously</strong>
+                                    <p>
+                                        You don't need an account. Anonymous link creation is
+                                        rate-limited and links created this way don't track clicks.
+                                    </p>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="account-notice">
+                                <div class="notice-icon">✓</div>
+                                <div>
+                                    <strong>You're signed in</strong>
+                                    <p>
+                                        This link will be associated with your account
+                                        so you can manage it later.
+                                    </p>
+                                </div>
+                            </div>
+                        }
+
+                        <button type="submit" class="create-submit">
+                            <span>Create short link</span>
+                            <span class="submit-arrow">→</span>
+                        </button>
+
+                        <div class="form-footer">
+                            <span>
+                                By creating a link, you agree not to
+                                use the service for malicious content.
+                            </span>
+                        </div>
+                    </form>
+                }
+
+            </div>
+
+            <div class="create-bottom">
+                <div>
+                    <span class="bottom-check">✓</span> No account required
+                </div>
+                <div>
+                    <span class="bottom-check">✓</span> HTTPS supported
+                </div>
+                <div>
+                    <span class="bottom-check">✓</span> Fast redirects
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document
+            .querySelectorAll("[data-copy-url]")
+            .forEach(button => {
+                button.addEventListener("click", async () => {
+                    const url = button.dataset.copyUrl;
+                    if (!url)
+                        return;
+
+                    try {
+                        await navigator.clipboard.writeText(url);
+                        const text = button.querySelector(".copy-text");
+
+                        const originalText = text.textContent;
+
+                        text.textContent = "Copied!";
+                        button.classList.add("copied");
+
+                        setTimeout(() => {
+                            text.textContent = originalText;
+                            button.classList.remove("copied");
+                        }, 1800);
+                    }
+                    catch {
+                        // Fallback for browsers where
+                        // clipboard API isn't available.
+                        const input = document.createElement("input");
+                        input.value = url;
+                        document.body.appendChild(input);
+                        input.select();
+                        document.execCommand("copy");
+                        input.remove();
+                    }
+                });
+            });
+    </script>
+}

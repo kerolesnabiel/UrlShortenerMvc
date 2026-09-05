@@ -1,7 +1,7 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using UrlShortenerMvc.Data;
 using UrlShortenerMvc.Models;
+using UrlShortenerMvc.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +14,11 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddDefaultIdentity<User>(options => options.SignIn.RequireConfirmedAccount = true)
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton<IUrlValidationService, UrlValidationService>();
+builder.Services.AddSingleton<IShortCodeGenerator, ShortCodeGenerator>();
+builder.Services.AddScoped<ILinkService, LinkService>();
 
 var app = builder.Build();
 
