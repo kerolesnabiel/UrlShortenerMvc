@@ -4,10 +4,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using UrlShortenerMvc.Data;
 using UrlShortenerMvc.Models;
+using UrlShortenerMvc.Services;
 
 namespace UrlShortenerMvc.Controllers;
 
-public class RedirectController(IDistributedCache cache, ApplicationDbContext dbContext) : Controller
+public class RedirectController(
+    IDistributedCache cache,
+    ApplicationDbContext dbContext,
+    IGeoIpService geoIpService) : Controller
 {
     [HttpGet("/{shortCode}")]
     public async Task<IActionResult> Index(string shortCode, CancellationToken cancellationToken)
@@ -48,7 +52,7 @@ public class RedirectController(IDistributedCache cache, ApplicationDbContext db
                 Timestamp = DateTime.UtcNow,
                 Referrer = Request.Headers.Referer.FirstOrDefault(),
                 UserAgent = Request.Headers.UserAgent.FirstOrDefault(),
-                Country = null // will implement it next
+                Country = geoIpService.GetCountry(HttpContext.Connection.RemoteIpAddress)
             };
 
             dbContext.Clicks.Add(click);

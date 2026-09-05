@@ -31,6 +31,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton<IUrlValidationService, UrlValidationService>();
 builder.Services.AddSingleton<IShortCodeGenerator, ShortCodeGenerator>();
 builder.Services.AddScoped<ILinkService, LinkService>();
+builder.Services.AddSingleton<IGeoIpService, GeoIpService>();
 
 var app = builder.Build();
 
