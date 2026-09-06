@@ -24,8 +24,21 @@ public static class DependencyInjection
 
         services.AddStackExchangeRedisCache(options =>
         {
-            options.Configuration = configuration.GetConnectionString("Redis");
             options.InstanceName = "UrlShortener:";
+
+            // For Local Dev
+            // options.Configuration = configuration.GetConnectionString("Redis");
+
+            // For Production
+            var redis = configuration.GetSection("Redis");
+            options.ConfigurationOptions = new StackExchange.Redis.ConfigurationOptions
+            {
+                EndPoints = { redis["Endpoint"]! },
+                User = redis["Username"],
+                Password = redis["Password"],
+                Ssl = true,
+                AbortOnConnectFail = false
+            };
         });
 
         services.Configure<ForwardedHeadersOptions>(options =>
