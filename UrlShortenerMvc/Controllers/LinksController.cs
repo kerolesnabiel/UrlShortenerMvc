@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Caching.Distributed;
+using UrlShortenerMvc.Helpers;
 using UrlShortenerMvc.Services;
 using UrlShortenerMvc.ViewModels;
 
@@ -239,6 +240,130 @@ public class LinksController(
         TempData["SuccessMessage"] = "Link updated successfully.";
 
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> Details(Guid id, string range = "30",
+        CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+
+        if (userId is null)
+            return Challenge();
+
+        var link = await linkService.GetLinkAsync(id, userId.Value, cancellationToken);
+
+        if (link is null)
+            return NotFound();
+
+        var now = DateTime.UtcNow;
+
+        DateTime? from = range switch
+        {
+            "7" => now.AddDays(-7),
+            "30" => now.AddDays(-30),
+            "all" => null,
+            _ => now.AddDays(-30)
+        };
+
+        var clicks = await linkService.GetLinkClicksAsync(link.Id, from, cancellationToken);
+
+        // Clicks over time
+        var clicksOverTime = clicks
+            .GroupBy(x => x.Timestamp.Date)
+            .OrderBy(x => x.Key)
+            .Select(x => new ClickChartPointViewModel
+            {
+                Date = x.Key,
+                Clicks = x.LongCount()
+            })
+            .ToList();
+
+
+        // Countries
+        var totalAnalyticsClicks = clicks.LongCount();
+
+        var countries = clicks
+            .GroupBy(x => string.IsNullOrWhiteSpace(x.Country)
+                ? "UNKNOWN"
+                : x.Country.Trim().ToUpperInvariant())
+            .Select(x => new CountryAnalyticsViewModel
+            {
+                CountryCode = x.Key,
+                CountryName = ClickAnalyticsHelper.GetCountryName(x.Key),
+                Clicks = x.LongCount(),
+                Percentage = totalAnalyticsClicks == 0
+                    ? 0
+                    : x.LongCount() * 100d / totalAnalyticsClicks
+            })
+            .OrderByDescending(x => x.Clicks)
+            .Take(10)
+            .ToList();
+
+
+        // Referrers
+        var referrers = clicks
+            .GroupBy(x => ClickAnalyticsHelper.NormalizeReferrer(x.Referrer))
+            .Select(x => new ReferrerAnalyticsViewModel
+            {
+                Name = x.Key,
+                Clicks = x.LongCount(),
+                Percentage = totalAnalyticsClicks == 0 ? 0 : x.LongCount() * 100d / totalAnalyticsClicks
+            })
+            .OrderByDescending(x => x.Clicks)
+            .Take(10)
+            .ToList();
+
+
+        // Devices
+        var devices = clicks
+            .GroupBy(x => ClickAnalyticsHelper.DetectDevice(x.UserAgent))
+            .Select(x => new DeviceAnalyticsViewModel
+            {
+                Name = x.Key,
+                Clicks = x.LongCount(),
+                Percentage = totalAnalyticsClicks == 0 ? 0 : x.LongCount() * 100d / totalAnalyticsClicks
+            })
+            .OrderByDescending(x => x.Clicks)
+            .ToList();
+
+
+        // Browsers
+        var browsers = clicks
+            .GroupBy(x => ClickAnalyticsHelper.DetectBrowser(x.UserAgent))
+            .Select(x => new BrowserAnalyticsViewModel
+            {
+                Name = x.Key,
+                Clicks = x.LongCount(),
+                Percentage = totalAnalyticsClicks == 0 ? 0 : x.LongCount() * 100d / totalAnalyticsClicks
+            })
+            .OrderByDescending(x => x.Clicks)
+            .Take(8)
+            .ToList();
+
+        var lastClickAt = await linkService.GetLinkLastClickTime(link.Id, cancellationToken);
+
+        var model = new LinkDetailsViewModel
+        {
+            Id = link.Id,
+            ShortCode = link.ShortCode,
+            ShortUrl = $"{Request.Scheme}://{Request.Host}/{link.ShortCode}",
+            OriginalUrl = link.OriginalUrl,
+            IsActive = link.IsActive,
+            CreatedAt = link.CreatedAt,
+            ExpiresAt = link.ExpiresAt,
+            TotalClicks = link.ClickCount,
+            LastClickAt = lastClickAt,
+            ClicksOverTime = clicksOverTime,
+            Countries = countries,
+            Referrers = referrers,
+            Devices = devices,
+            Browsers = browsers
+        };
+
+        ViewData["Range"] = range;
+
+        return View(model);
     }
 
     private string BuildShortUrl(string shortCode)

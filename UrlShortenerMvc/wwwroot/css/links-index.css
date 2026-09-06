@@ -2,7 +2,7 @@
   width: min(1180px, calc(100% - 40px));
   margin: 0 auto;
   padding: 48px 0 70px;
-  padding-bottom: 160px;
+  padding-bottom: 200px;
 }
 
 .links-header {
@@ -574,7 +574,7 @@
     width: calc(100% - 24px);
     max-width: 1180px;
     padding: 24px 0 40px;
-    padding-bottom: 160px;
+    padding-bottom: 230px;
   }
 
   .links-header {
@@ -780,7 +780,7 @@
   .links-page {
     width: calc(100% - 20px);
     padding-top: 20px;
-    padding-bottom: 160px;
+    padding-bottom: 230px;
   }
 
   .links-header h1 {

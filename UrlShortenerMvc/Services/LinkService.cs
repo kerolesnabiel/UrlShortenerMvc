@@ -16,6 +16,11 @@ public interface ILinkService
 
     Task<LinkListViewModel> GetUserLinksAsync(Guid userId, string? search, string baseUrl,
         int pageNumber = 1, int pageSize = 10, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Click>> GetLinkClicksAsync(Guid linkId, DateTime? from = null,
+        CancellationToken cancellationToken = default);
+
+    Task<DateTime?> GetLinkLastClickTime(Guid linkId, CancellationToken cancellationToken = default);
 }
 
 internal class LinkService(IShortCodeGenerator shortCodeGenerator, ApplicationDbContext dbContext) : ILinkService
@@ -116,5 +121,28 @@ internal class LinkService(IShortCodeGenerator shortCodeGenerator, ApplicationDb
             PageSize = pageSize,
             TotalItems = totalItems
         };
+    }
+
+    public async Task<IReadOnlyList<Click>> GetLinkClicksAsync(Guid linkId, DateTime? from = null,
+        CancellationToken cancellationToken = default)
+    {
+        var clicksQuery = dbContext.Clicks
+            .AsNoTracking()
+            .Where(x => x.LinkId == linkId);
+
+        if (from.HasValue)
+            clicksQuery = clicksQuery.Where(x => x.Timestamp >= from.Value);
+
+        return await clicksQuery.ToListAsync(cancellationToken);
+    }
+
+    public async Task<DateTime?> GetLinkLastClickTime(Guid linkId, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Clicks
+            .AsNoTracking()
+            .Where(x => x.LinkId == linkId)
+            .OrderByDescending(x => x.Timestamp)
+            .Select(x => (DateTime?)x.Timestamp)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 }

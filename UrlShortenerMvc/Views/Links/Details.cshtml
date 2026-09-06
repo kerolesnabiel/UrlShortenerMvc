@@ -1,0 +1,432 @@
+@model LinkDetailsViewModel
+
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Link Analytics";
+
+    var range = ViewData["Range"]?.ToString() ?? "30";
+
+    var chartLabels = Model.ClicksOverTime
+        .Select(x => x.Date.ToLocalTime().ToString("MMM d"))
+        .ToArray();
+
+    var chartValues = Model.ClicksOverTime
+        .Select(x => x.Clicks)
+        .ToArray();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/links-details.css" asp-append-version="true"/>
+}
+
+<div class="link-details-page">
+<div class="details-header">
+    <div>
+        <a asp-controller="Links" asp-action="Index" class="back-link">
+            <span>←</span>
+            My Links
+        </a>
+        <div class="page-eyebrow">Link analytics</div>
+        <h1>Link details</h1>
+    </div>
+    <a asp-controller="Links" asp-action="Edit" asp-route-id="@Model.Id" class="edit-link-button">
+        Edit settings
+    </a>
+</div>
+
+
+<!-- Link information -->
+<section class="link-overview-card">
+    <div class="link-overview-main">
+        <div class="short-link-icon">↗</div>
+        <div class="link-overview-content">
+            <div class="short-link-row">
+                <a href="@Model.ShortUrl" target="_blank" rel="noopener noreferrer" class="short-url">
+                    @Model.ShortUrl
+                </a>
+                <button type="button" class="copy-button" data-copy="@Model.ShortUrl">
+                    Copy
+                </button>
+            </div>
+            <a href="@Model.OriginalUrl" target="_blank" rel="noopener noreferrer"
+               class="original-url" title="@Model.OriginalUrl">
+                @Model.OriginalUrl
+            </a>
+        </div>
+    </div>
+
+    <div class="link-meta">
+        @if (Model.IsExpired)
+        {
+            <span class="status-badge status-expired">Expired</span>
+        }
+        else if (!Model.IsActive)
+        {
+            <span class="status-badge status-disabled">Disabled</span>
+        }
+        else
+        {
+            <span class="status-badge status-active">Active</span>
+        }
+        <span>
+            Created @Model.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")
+        </span>
+        @if (Model.ExpiresAt.HasValue)
+        {
+            <span>
+                Expires @Model.ExpiresAt.Value.ToLocalTime().ToString("MMM d, yyyy")
+            </span>
+        }
+    </div>
+</section>
+
+
+<!-- Summary -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <span class="stat-label">Total clicks</span>
+        <strong class="stat-value">
+            @Model.TotalClicks.ToString("N0")
+        </strong>
+        <span class="stat-description">All-time clicks</span>
+    </div>
+
+    <div class="stat-card">
+        <span class="stat-label">Last click</span>
+        <strong class="stat-value stat-date">
+            @if (Model.LastClickAt.HasValue)
+            {
+                @Model.LastClickAt.Value.ToLocalTime().ToString("MMM d")
+            }
+            else
+            {
+                <span>—</span>
+            }
+        </strong>
+        <span class="stat-description">
+            @if (Model.LastClickAt.HasValue)
+            {
+                @Model.LastClickAt.Value.ToLocalTime().ToString("h:mm tt")
+            }
+            else
+            {
+                <span>No clicks yet</span>
+            }
+        </span>
+    </div>
+
+    <div class="stat-card">
+        <span class="stat-label">Status</span>
+        <strong class="stat-value stat-status">
+            @if (Model.IsExpired)
+            {
+                <span>Expired</span>
+            }
+            else if (!Model.IsActive)
+            {
+                <span>Disabled</span>
+            }
+            else
+            {
+                <span>Active</span>
+            }
+        </strong>
+        <span class="stat-description">Current availability</span>
+    </div>
+</div>
+
+
+<!-- Click chart -->
+<section class="analytics-card chart-card">
+    <div class="analytics-card-header">
+        <div>
+            <h2>Clicks over time</h2>
+            <p>See how many times your link was opened.</p>
+        </div>
+        <div class="range-selector">
+            <a asp-action="Details"
+               asp-route-id="@Model.Id"
+               asp-route-range="7"
+               class="range-button @(range == "7" ? "selected" : "")">
+                7 days
+            </a>
+            <a asp-action="Details"
+               asp-route-id="@Model.Id"
+               asp-route-range="30"
+               class="range-button @(range == "30" ? "selected" : "")">
+                30 days
+            </a>
+            <a asp-action="Details"
+               asp-route-id="@Model.Id"
+               asp-route-range="all"
+               class="range-button @(range == "all" ? "selected" : "")">
+                All time
+            </a>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        @if (Model.ClicksOverTime.Any())
+        {
+            <canvas id="clicksChart"></canvas>
+        }
+        else
+        {
+            <div class="chart-empty">
+                <div class="chart-empty-icon">↗</div>
+                <strong>No clicks yet</strong>
+                <span>Analytics will appear here once someone opens your link.</span>
+            </div>
+        }
+    </div>
+</section>
+
+
+<!-- Countries + Referrers -->
+<div class="analytics-two-column">
+    <!-- Countries -->
+    <section class="analytics-card">
+        <div class="analytics-card-header">
+            <div>
+                <h2>Countries</h2>
+                <p>Where your visitors are coming from.</p>
+            </div>
+        </div>
+
+        @if (Model.Countries.Any())
+        {
+            <div class="analytics-list">
+                @foreach (var country in Model.Countries)
+                {
+                    <div class="analytics-list-item">
+                        <div class="analytics-item-main">
+                            <span class="country-flag">@country.FlagEmoji</span>
+                            <span class="analytics-item-name">@country.CountryName</span>
+                        </div>
+                        <div class="analytics-item-stats">
+                            <strong>@country.Clicks.ToString("N0")</strong>
+                            <span>@country.Percentage.ToString("0.0")%</span>
+                        </div>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-bar"
+                             style="width: @country.Percentage.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%">
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="analytics-empty">No country data yet.</div>
+        }
+    </section>
+
+    <!-- Referrers -->
+    <section class="analytics-card">
+        <div class="analytics-card-header">
+            <div>
+                <h2>Referrers</h2>
+                <p>Where your visitors came from.</p>
+            </div>
+        </div>
+        @if (Model.Referrers.Any())
+        {
+            <div class="analytics-list">
+                @foreach (var referrer in Model.Referrers)
+                {
+                    <div class="analytics-list-item">
+                        <div class="analytics-item-main">
+                            <span class="referrer-icon">↗</span>
+                            <span class="analytics-item-name">@referrer.Name</span>
+                        </div>
+                        <div class="analytics-item-stats">
+                            <strong>@referrer.Clicks.ToString("N0")</strong>
+                            <span>@referrer.Percentage.ToString("0.0")%</span>
+                        </div>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-bar"
+                             style="width: @referrer.Percentage.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%">
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="analytics-empty">No referrer data yet.</div>
+        }
+    </section>
+</div>
+
+<!-- Devices + Browsers -->
+<div class="analytics-two-column">
+    <!-- Devices -->
+    <section class="analytics-card">
+        <div class="analytics-card-header">
+            <div>
+                <h2>Devices</h2>
+                <p>Devices used to open your link.</p>
+            </div>
+        </div>
+        @if (Model.Devices.Any())
+        {
+            <div class="analytics-list">
+                @foreach (var device in Model.Devices)
+                {
+                    <div class="analytics-list-item">
+                        <div class="analytics-item-main">
+                            <span class="device-icon">
+                                @switch (device.Name)
+                                {
+                                    case "Mobile":
+                                        @:▯
+                                        break;
+                                    case "Tablet":
+                                        @:▤
+                                        break;
+                                    case "Desktop":
+                                        @:▣
+                                        break;
+                                    default:
+                                        @:?
+                                        break;
+                                }
+                            </span>
+
+                            <span class="analytics-item-name">@device.Name</span>
+
+                        </div>
+                        <div class="analytics-item-stats">
+                            <strong>@device.Clicks.ToString("N0")</strong>
+                            <span>@device.Percentage.ToString("0.0")%</span>
+                        </div>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-bar"
+                             style="width: @device.Percentage.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%">
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="analytics-empty">No device data yet.</div>
+        }
+    </section>
+
+    <!-- Browsers -->
+    <section class="analytics-card">
+        <div class="analytics-card-header">
+            <div>
+                <h2>Browsers</h2>
+                <p>Browsers used to open your link.</p>
+            </div>
+        </div>
+        @if (Model.Browsers.Any())
+        {
+            <div class="analytics-list">
+                @foreach (var browser in Model.Browsers)
+                {
+                    <div class="analytics-list-item">
+                        <div class="analytics-item-main">
+                            <span class="browser-icon">◉</span>
+                            <span class="analytics-item-name">@browser.Name</span>
+                        </div>
+                        <div class="analytics-item-stats">
+                            <strong>@browser.Clicks.ToString("N0")</strong>
+                            <span>@browser.Percentage.ToString("0.0")%</span>
+                        </div>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-bar"
+                             style="width: @browser.Percentage.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%">
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="analytics-empty">No browser data yet.</div>
+        }
+    </section>
+</div>
+
+</div>
+
+
+@section Scripts {
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            /*
+             * Copy short URL
+             */
+            document.querySelectorAll("[data-copy]")
+                .forEach(button => {
+                    button.addEventListener("click", async () => {
+                        const value = button.dataset.copy;
+                        if (!value)
+                            return;
+                        try {
+                            await navigator.clipboard.writeText(value);
+                            const originalText = button.textContent;
+                            button.textContent = "Copied";
+                            button.classList.add("copied");
+                            setTimeout(() => {
+                                button.textContent = originalText;
+                                button.classList.remove("copied");
+                            }, 1500);
+                        } catch {
+                            console.error("Unable to copy URL.");
+                        }
+                    });
+                });
+            /*
+             * Click chart
+             */
+            const canvas = document.getElementById("clicksChart");
+            if (!canvas)
+                return;
+            const labels = @Html.Raw(JsonSerializer.Serialize(chartLabels));
+            const values = @Html.Raw(JsonSerializer.Serialize(chartValues));
+
+            new Chart(canvas, {
+                type: "line",
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        borderWidth: 2,
+                        tension: 0.35,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: "#94a3b8", maxTicksLimit: 8 }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0, color: "#94a3b8" },
+                            grid: { color: "#eef2f7" }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+}
