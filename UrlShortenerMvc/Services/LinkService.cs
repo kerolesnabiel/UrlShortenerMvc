@@ -23,7 +23,7 @@ internal class LinkService(IShortCodeGenerator shortCodeGenerator, ApplicationDb
     public async Task<Link?> GetLinkAsync(Guid id, Guid? userId, CancellationToken cancellationToken)
     {
         return await dbContext.Links.FirstOrDefaultAsync(x =>
-            x.Id == id && (!userId.HasValue || x.UserId == userId.Value), cancellationToken);
+            x.Id == id && !x.DeletedAt.HasValue && (!userId.HasValue || x.UserId == userId.Value), cancellationToken);
     }
 
     public async Task UpdateLinkAsync(Link link, CancellationToken cancellationToken)
@@ -79,7 +79,8 @@ internal class LinkService(IShortCodeGenerator shortCodeGenerator, ApplicationDb
 
         search = search?.Trim();
 
-        var query = dbContext.Links.AsNoTracking().Where(x => x.UserId == userId);
+        var query = dbContext.Links.AsNoTracking()
+            .Where(x => x.UserId == userId && !x.DeletedAt.HasValue);
 
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(x => x.ShortCode.Contains(search) || x.OriginalUrl.Contains(search));

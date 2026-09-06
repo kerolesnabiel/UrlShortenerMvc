@@ -14,6 +14,8 @@ public class Link
 
     public DateTime? ExpiresAt { get; set; }
 
+    public DateTime? DeletedAt { get; set; }
+
     public bool IsActive { get; set; } = true;
 
     public long ClickCount { get; set; } = 0L;

@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Caching.Distributed;
 using UrlShortenerMvc.Services;
 using UrlShortenerMvc.ViewModels;
 
@@ -10,7 +11,8 @@ namespace UrlShortenerMvc.Controllers;
 [Authorize]
 public class LinksController(
     IUrlValidationService urlValidationService,
-    ILinkService linkService) : Controller
+    ILinkService linkService,
+    IDistributedCache cache) : Controller
 {
     private const int PageSize = 30;
 
@@ -101,6 +103,11 @@ public class LinksController(
         link.IsActive = false;
         await linkService.UpdateLinkAsync(link, cancellationToken);
 
+        var cacheKey = $"link:{link.ShortCode}";
+        var cached = await cache.GetStringAsync(cacheKey, cancellationToken);
+        if (cached is not null)
+            await cache.RemoveAsync(cacheKey, cancellationToken);
+
         TempData["SuccessMessage"] = "The link has been disabled.";
 
         return RedirectToAction(nameof(Index));
@@ -136,10 +143,34 @@ public class LinksController(
         return RedirectToAction(nameof(Index));
     }
 
-    public IActionResult Delete()
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var userId = GetCurrentUserId();
+
+        if (userId is null)
+            return Challenge();
+
+        var link = await linkService.GetLinkAsync(id, userId, cancellationToken);
+
+        if (link is null)
+            return NotFound();
+
+        link.IsActive = false;
+        link.DeletedAt = DateTime.UtcNow;
+        await linkService.UpdateLinkAsync(link, cancellationToken);
+
+        var cacheKey = $"link:{link.ShortCode}";
+        var cached = await cache.GetStringAsync(cacheKey, cancellationToken);
+        if (cached is not null)
+            await cache.RemoveAsync(cacheKey, cancellationToken);
+
+        TempData["SuccessMessage"] = "The link has been deleted.";
+
+        return RedirectToAction(nameof(Index));
     }
+
 
     public IActionResult Edit()
     {
