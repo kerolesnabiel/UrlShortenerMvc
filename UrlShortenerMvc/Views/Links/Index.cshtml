@@ -1,0 +1,317 @@
+@model UrlShortenerMvc.ViewModels.LinkListViewModel
+
+@{
+    ViewData["Title"] = "My Links";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/links-index.css" asp-append-version="true"/>
+}
+
+<div class="links-page">
+
+    <div class="links-header">
+        <div>
+            <div class="page-eyebrow">Dashboard</div>
+            <h1>My Links</h1>
+            <p>Manage and monitor the links you've created.</p>
+        </div>
+        <a asp-controller="Links" asp-action="Create" class="create-link-button">
+            <span>+</span>
+            Create link
+        </a>
+    </div>
+
+
+    @if (TempData["SuccessMessage"] is string successMessage)
+    {
+        <div class="alert alert-success">
+            <span class="alert-icon">✓</span>
+            <span>@successMessage</span>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] is string errorMessage)
+    {
+        <div class="alert alert-error">
+            <span class="alert-icon">!</span>
+            <span>@errorMessage</span>
+        </div>
+    }
+
+    <div class="links-toolbar">
+        <form asp-action="Index" method="get" class="search-form">
+            <div class="search-input-wrapper">
+                <span class="search-icon">⌕</span>
+                <input type="search" name="search" value="@Model.Search" placeholder="Search links..."autocomplete="off"/>
+                @if (!string.IsNullOrWhiteSpace(Model.Search))
+                {
+                    <a asp-action="Index" class="clear-search">×</a>
+                }
+            </div>
+            <button type="submit" class="search-button">Search</button>
+        </form>
+
+        <div class="links-count">
+            @if (Model.TotalItems == 1)
+            {
+                <span>1 link</span>
+            }
+            else
+            {
+                <span>@Model.TotalItems links</span>
+            }
+        </div>
+    </div>
+
+
+    @if (!Model.Links.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-icon">↗</div>
+            @if (!string.IsNullOrWhiteSpace(Model.Search))
+            {
+                <h2>No links found</h2>
+                <p>We couldn't find any links matching"<strong>@Model.Search</strong>".</p>
+                <a asp-action="Index" class="secondary-button">Clear search</a>
+            }
+            else
+            {
+                <h2>No links yet</h2>
+                <p>Create your first short link and start sharing it.</p>
+                <a asp-controller="Links" asp-action="Create" class="create-link-button">
+                    <span>+</span>
+                    Create your first link
+                </a>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="links-card">
+            <div class="links-table-header">
+                <div>Link</div>
+                <div>Destination</div>
+                <div>Clicks</div>
+                <div>Status</div>
+                <div>Created</div>
+                <div></div>
+            </div>
+
+            @foreach (var link in Model.Links)
+            {
+                <div class="link-row">
+                    <div class="link-main">
+                        <div class="link-icon">↗</div>
+                        <div class="link-information">
+                            <a href="@link.ShortUrl" target="_blank" rel="noopener noreferrer" class="short-url">
+                                @link.ShortUrl
+                            </a>
+                            <button type="button" class="copy-button" data-copy="@link.ShortUrl" title="Copy short URL">
+                                Copy
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="destination-cell">
+                        <a href="@link.OriginalUrl" target="_blank" rel="noopener noreferrer" title="@link.OriginalUrl">
+                            @link.OriginalUrl
+                        </a>
+                    </div>
+
+                    <div class="clicks-cell">
+                        <strong>@link.ClickCount.ToString("N0")</strong>
+                    </div>
+
+                    <div class="status-cell">
+                        @if (link.IsExpired)
+                        {
+                            <span class="status-badge status-expired">Expired</span>
+                        }
+                        else if (!link.IsActive)
+                        {
+                            <span class="status-badge status-disabled">Disabled</span>
+                        }
+                        else
+                        {
+                            <span class="status-badge status-active">Active</span>
+                        }
+                    </div>
+
+
+                    <div class="created-cell">
+                        <span>
+                            @link.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")
+                        </span>
+                        @if (link.ExpiresAt.HasValue)
+                        {
+                            <small>
+                                Expires
+                                @link.ExpiresAt.Value
+                                .ToLocalTime()
+                                .ToString("MMM d, yyyy")
+                            </small>
+                        }
+                    </div>
+
+                    <div class="actions-cell">
+                        <button type="button" class="actions-button" aria-label="Link actions">
+                            ⋮
+                        </button>
+                        <div class="actions-menu">
+                            <a href="@link.ShortUrl" target="_blank" rel="noopener noreferrer">
+                                Open
+                            </a>
+                            <button type="button" class="copy-action" data-copy="@link.ShortUrl">
+                                Copy link
+                            </button>
+                            <a asp-action="Edit" asp-route-id="@link.Id">Edit</a>
+                            @if (link.IsActive && !link.IsExpired)
+                            {
+                                <form asp-action="Disable" asp-route-id="@link.Id" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit">Disable</button>
+                                </form>
+                            }
+                            else if (!link.IsExpired)
+                            {
+                                <form asp-action="Enable" asp-route-id="@link.Id" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit">Enable</button>
+                                </form>
+                            }
+                            <div class="menu-divider"></div>
+                            <form asp-action="Delete" asp-route-id="@link.Id" method="post" class="delete-form">
+                                @Html.AntiForgeryToken()
+
+                                <button type="submit" class="danger-action">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                </div>
+            }
+
+        </div>
+
+
+        @if (Model.TotalPages > 1)
+        {
+            <nav class="pagination" aria-label="Links pagination">
+
+                @if (Model.HasPreviousPage)
+                {
+                    <a asp-action="Index" asp-route-search="@Model.Search" asp-route-pageNumber="@(Model.PageNumber - 1)"
+                       class="pagination-button">
+                        ←
+                    </a>
+                }
+                else
+                {
+                    <span class="pagination-button disabled">←</span>
+                }
+
+                <span class="pagination-current">
+                    Page @Model.PageNumber of @Model.TotalPages
+                </span>
+
+                @if (Model.HasNextPage)
+                {
+                    <a asp-action="Index" asp-route-search="@Model.Search" asp-route-pageNumber="@(Model.PageNumber + 1)"
+                       class="pagination-button">
+                        →
+                    </a>
+                }
+                else
+                {
+                    <span class="pagination-button disabled">
+                        →
+                    </span>
+                }
+
+            </nav>
+        }
+    }
+
+</div>
+
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            /*
+             * Copy buttons
+             */
+            document.querySelectorAll("[data-copy]")
+                .forEach(button => {
+                    button.addEventListener("click", async () => {
+                        const value = button.dataset.copy;
+                        if (!value)
+                            return;
+                        try {
+                            await navigator.clipboard.writeText(value);
+                            const originalText = button.textContent;
+                            button.textContent = "Copied";
+                            setTimeout(() => {
+                                button.textContent = originalText;
+                            }, 1500);
+                        } catch {
+                            console.error("Unable to copy URL.");
+                        }
+                    });
+                });
+
+
+            /*
+             * Action menus
+             */
+            document.querySelectorAll(".actions-button")
+                .forEach(button => {
+                    button.addEventListener("click", event => {
+                        event.stopPropagation();
+                        const currentMenu =
+                            button.nextElementSibling;
+                        document
+                            .querySelectorAll(".actions-menu.open")
+                            .forEach(menu => {
+                                if (menu !== currentMenu) {
+                                    menu.classList.remove("open");
+                                }
+                            });
+                        currentMenu.classList.toggle("open");
+                    });
+                });
+
+            /*
+             * Close action menus when clicking elsewhere
+             */
+            document.addEventListener("click", () => {
+                document
+                    .querySelectorAll(".actions-menu.open")
+                    .forEach(menu => {
+                        menu.classList.remove("open");
+                    });
+
+            });
+
+
+            /*
+             * Delete confirmation
+             */
+            document.querySelectorAll(".delete-form")
+                .forEach(form => {
+                    form.addEventListener("submit", event => {
+                        const confirmed = confirm(
+                            "Are you sure you want to delete this link?"
+                        );
+                        if (!confirmed) {
+                            event.preventDefault();
+                        }
+                    });
+                });
+
+        });
+    </script>
+}

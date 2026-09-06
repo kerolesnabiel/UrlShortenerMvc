@@ -7,10 +7,30 @@ using UrlShortenerMvc.ViewModels;
 
 namespace UrlShortenerMvc.Controllers;
 
+[Authorize]
 public class LinksController(
     IUrlValidationService urlValidationService,
     ILinkService linkService) : Controller
 {
+    private const int PageSize = 30;
+
+    [HttpGet("/Links")]
+    public async Task<IActionResult> Index(string? search, int pageNumber = 1,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+
+        if (userId is null)
+            return Challenge();
+
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+
+        var model = await linkService.GetUserLinksAsync(userId.Value, search, baseUrl,
+            pageNumber, PageSize, cancellationToken);
+
+        return View(model);
+    }
+
     [HttpGet]
     [AllowAnonymous]
     public IActionResult Create()
@@ -38,14 +58,7 @@ public class LinksController(
             return View(model);
         }
 
-        Guid? userId = null;
-        if (User.Identity?.IsAuthenticated == true)
-        {
-            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!Guid.TryParse(userIdValue, out var parsedUserId))
-                return Unauthorized();
-            userId = parsedUserId;
-        }
+        var userId = GetCurrentUserId();
 
         DateTime? expiresAt = null;
         if (model.ExpirationDays.HasValue)
@@ -71,8 +84,34 @@ public class LinksController(
         return View(model);
     }
 
+    public IActionResult Disable()
+    {
+        throw new NotImplementedException();
+    }
+
+    public IActionResult Enable()
+    {
+        throw new NotImplementedException();
+    }
+
+    public IActionResult Delete()
+    {
+        throw new NotImplementedException();
+    }
+
+    public IActionResult Edit()
+    {
+        throw new NotImplementedException();
+    }
+
     private string BuildShortUrl(string shortCode)
     {
         return $"{Request.Scheme}://{Request.Host}/{shortCode}";
+    }
+
+    private Guid? GetCurrentUserId()
+    {
+        var value = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return Guid.TryParse(value, out var userId) ? userId : null;
     }
 }

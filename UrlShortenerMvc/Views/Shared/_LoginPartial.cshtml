@@ -5,7 +5,13 @@
 {
     <li class="nav-item">
         <a class="nav-link" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">
-            @User.Identity?.Name!
+            Hi, @User.Identity?.Name
+        </a>
+
+    </li>
+    <li class="nav-item">
+        <a asp-controller="Links" asp-action="Index" class="nav-link">
+            My Links
         </a>
     </li>
     <li class="nav-item">
