@@ -171,10 +171,74 @@ public class LinksController(
         return RedirectToAction(nameof(Index));
     }
 
-
-    public IActionResult Edit()
+    [HttpGet]
+    public async Task<IActionResult> Edit(Guid id, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var userId = GetCurrentUserId();
+
+        if (userId is null)
+            return Challenge();
+
+        var link = await linkService.GetLinkAsync(id, userId, cancellationToken);
+
+        if (link is null)
+            return NotFound();
+
+        var model = new EditLinkViewModel
+        {
+            Id = link.Id,
+            ShortCode = link.ShortCode,
+            ShortUrl = $"{Request.Scheme}://{Request.Host}/{link.ShortCode}",
+            OriginalUrl = link.OriginalUrl,
+            IsActive = link.IsActive,
+            ExpiresAt = link.ExpiresAt,
+            CreatedAt = link.CreatedAt,
+            ClickCount = link.ClickCount
+        };
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(EditLinkViewModel model, CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+
+        if (userId is null)
+            return Challenge();
+
+        var link = await linkService.GetLinkAsync(model.Id, userId, cancellationToken);
+
+        if (link is null)
+            return NotFound();
+
+        if (!ModelState.IsValid)
+        {
+            model.ShortUrl = $"{Request.Scheme}://{Request.Host}/{link.ShortCode}";
+            model.ShortCode = link.ShortCode;
+            model.OriginalUrl = link.OriginalUrl;
+            model.ExpiresAt = link.ExpiresAt;
+            model.CreatedAt = link.CreatedAt;
+            model.ClickCount = link.ClickCount;
+
+            return View(model);
+        }
+
+        link.IsActive = model.IsActive;
+        link.ExpiresAt = model.ExpirationDays switch
+        {
+            null => null,
+            1 => DateTime.UtcNow.AddDays(1),
+            7 => DateTime.UtcNow.AddDays(7),
+            30 => DateTime.UtcNow.AddDays(30),
+            _ => link.ExpiresAt
+        };
+
+        await linkService.UpdateLinkAsync(link, cancellationToken);
+        TempData["SuccessMessage"] = "Link updated successfully.";
+
+        return RedirectToAction(nameof(Index));
     }
 
     private string BuildShortUrl(string shortCode)

@@ -1,0 +1,246 @@
+@model EditLinkViewModel
+
+@{
+    ViewData["Title"] = "Edit Link";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/links-edit.css" asp-append-version="true"/>
+}
+
+<div class="edit-link-page">
+    <div class="edit-page-header">
+        <a asp-controller="Links" asp-action="Index" class="back-link">
+            <span>←</span>
+            My Links
+        </a>
+        <div class="page-eyebrow">Link settings</div>
+        <h1>Edit link</h1>
+        <p>Manage the status and expiration of your short link.</p>
+    </div>
+
+    <form asp-action="Edit" method="post" class="edit-link-form">
+        @Html.AntiForgeryToken()
+        <input asp-for="Id" type="hidden"/>
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <section class="edit-card">
+            <div class="card-header">
+                <div>
+                    <h2>Short link</h2>
+                    <p>This is the link people use to access your destination.</p>
+                </div>
+            </div>
+            <div class="short-link-box">
+                <div class="short-link-icon">↗</div>
+                <div class="short-link-content">
+                    <span class="short-link-label">Short URL</span>
+                    <a href="@Model.ShortUrl" target="_blank" rel="noopener noreferrer" class="short-link-url">
+                        @Model.ShortUrl
+                    </a>
+
+                </div>
+                <button type="button" class="copy-button" data-copy="@Model.ShortUrl">Copy</button>
+            </div>
+        </section>
+
+        <section class="edit-card">
+            <div class="card-header">
+                <div>
+                    <h2>Destination</h2>
+                    <p>The destination URL cannot be changed.</p>
+                </div>
+                <span class="read-only-badge">Read only</span>
+            </div>
+            <div class="destination-box">
+                <div class="destination-icon">↗</div>
+                <div class="destination-content">
+                    <span class="destination-label">Original URL</span>
+                    <a href="@Model.OriginalUrl"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       class="destination-url"
+                       title="@Model.OriginalUrl">
+                        @Model.OriginalUrl
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="edit-card">
+            <div class="card-header">
+                <div>
+                    <h2>Settings</h2>
+                    <p>Control whether your link is available and when it expires.</p>
+                </div>
+            </div>
+
+            <div class="setting-row">
+                <div class="setting-information">
+                    <div class="setting-title">Link status</div>
+                    <div class="setting-description">
+                        Disabled links cannot be used to access the destination.
+                    </div>
+                </div>
+                <label class="toggle">
+                    <input asp-for="IsActive"/>
+                    <span class="toggle-slider"></span>
+                    <span class="toggle-text">
+                        <span class="toggle-active-text">Active</span>
+                        <span class="toggle-disabled-text">Disabled</span>
+                    </span>
+                </label>
+            </div>
+
+            <div class="setting-divider"></div>
+
+            <div class="expiration-setting">
+                <div class="setting-information">
+                    <div class="setting-title">Expiration</div>
+                    <div class="setting-description">
+                        Choose when this short link should stop working.
+                    </div>
+                </div>
+
+                <div class="expiration-control">
+                    <select asp-for="ExpirationDays" class="expiration-select">
+                        @if (Model.ExpiresAt.HasValue)
+                        {
+                            if (Model.ExpiresAt.Value <= DateTime.UtcNow)
+                            {
+                                // Use int.MinValue to don't change the value
+                                <option value="@int.MinValue" class="" style="{{color:red;}}">Expired</option>
+                            }
+                            else
+                            {
+                                var daysToExpiration = Math.Max(
+                                    0, Math.Round((Model.ExpiresAt.Value - DateTime.UtcNow).TotalDays, 3));
+                                if (daysToExpiration < 1)
+                                {
+                                    var hoursToExpiration = (int)(daysToExpiration * 24);
+                                    <option value="@int.MinValue">expires in @hoursToExpiration hours </option>
+                                }
+                                else
+                                {
+                                    daysToExpiration = (int)daysToExpiration;
+                                    <option value="@int.MinValue">expires in @daysToExpiration days </option>
+                                }
+                            }
+                        }
+                        <option value="">Never expires</option>
+                        <option value="1">In 1 day</option>
+                        <option value="7">In 7 days</option>
+                        <option value="30">In 30 days</option>
+                    </select>
+                    <span class="select-arrow">▾</span>
+                </div>
+            </div>
+        </section>
+
+
+        <section class="edit-card">
+            <div class="card-header">
+                <div>
+                    <h2>Information</h2>
+                    <p>Details about this link.</p>
+                </div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Short code</span>
+                    <span class="info-value code-value">
+                        @Model.ShortCode
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="info-label">Created</span>
+                    <span class="info-value">
+                        @Model.CreatedAt.ToLocalTime();
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="info-label">Clicks</span>
+                    <span class="info-value">
+                        @Model.ClickCount.ToString("N0")
+                    </span>
+                </div>
+
+                <div class="info-item">
+                    <span class="info-label">Current expiration</span>
+                    <span class="info-value">
+                        @if (Model.ExpiresAt.HasValue)
+                        {
+                            @Model.ExpiresAt.Value.ToLocalTime()
+                        }
+                        else
+                        {
+                            <span>Never</span>
+                        }
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <a asp-controller="Links" asp-action="Index" class="cancel-button">
+                Cancel
+            </a>
+            <button type="submit" class="save-button">
+                Save changes
+            </button>
+        </div>
+
+    </form>
+
+</div>
+
+
+@section Scripts {
+
+    <partial name="_ValidationScriptsPartial"/>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+
+            /*
+             * Copy short URL
+             */
+            document.querySelectorAll("[data-copy]")
+                .forEach(button => {
+                    button.addEventListener("click", async () => {
+                        const value = button.dataset.copy;
+                        if (!value)
+                            return;
+                        try {
+                            await navigator.clipboard.writeText(value);
+                            const originalText = button.textContent;
+                            button.textContent = "Copied";
+                            button.classList.add("copied");
+                            setTimeout(() => {
+                                button.textContent = originalText;
+                                button.classList.remove("copied");
+                            }, 1500);
+                        } catch {
+                            console.error("Unable to copy URL.");
+                        }
+                    });
+                });
+
+            /*
+             * Update toggle text
+             */
+            const activeInput = document.querySelector('input[name="IsActive"]');
+            const toggle = document.querySelector(".toggle");
+            if (activeInput && toggle) {
+                const updateToggleText = () => {
+                    toggle.classList.toggle("is-active", activeInput.checked);
+                };
+                activeInput.addEventListener("change", updateToggleText);
+                updateToggleText();
+            }
+        });
+    </script>
+}
