@@ -7,6 +7,10 @@ namespace UrlShortenerMvc.Services;
 
 public interface ILinkService
 {
+    Task<Link?> GetLinkAsync(Guid id, Guid? userId = null, CancellationToken cancellationToken = default);
+    Task UpdateLinkAsync(Link link, CancellationToken cancellationToken = default);
+
+
     Task<Link> CreateAsync(string originalUrl, Guid? userId, DateTime? expiresAt,
         CancellationToken cancellationToken = default);
 
@@ -16,6 +20,18 @@ public interface ILinkService
 
 internal class LinkService(IShortCodeGenerator shortCodeGenerator, ApplicationDbContext dbContext) : ILinkService
 {
+    public async Task<Link?> GetLinkAsync(Guid id, Guid? userId, CancellationToken cancellationToken)
+    {
+        return await dbContext.Links.FirstOrDefaultAsync(x =>
+            x.Id == id && (!userId.HasValue || x.UserId == userId.Value), cancellationToken);
+    }
+
+    public async Task UpdateLinkAsync(Link link, CancellationToken cancellationToken)
+    {
+        dbContext.Links.Update(link);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<Link> CreateAsync(string originalUrl, Guid? userId, DateTime? expiresAt,
         CancellationToken cancellationToken)
     {

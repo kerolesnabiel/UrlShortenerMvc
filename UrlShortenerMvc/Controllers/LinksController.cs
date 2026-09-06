@@ -84,14 +84,56 @@ public class LinksController(
         return View(model);
     }
 
-    public IActionResult Disable()
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Disable(Guid id, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var userId = GetCurrentUserId();
+
+        if (userId is null)
+            return Challenge();
+
+        var link = await linkService.GetLinkAsync(id, userId, cancellationToken);
+
+        if (link is null)
+            return NotFound();
+
+        link.IsActive = false;
+        await linkService.UpdateLinkAsync(link, cancellationToken);
+
+        TempData["SuccessMessage"] = "The link has been disabled.";
+
+        return RedirectToAction(nameof(Index));
     }
 
-    public IActionResult Enable()
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Enable(Guid id, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        var userId = GetCurrentUserId();
+
+        if (userId is null)
+            return Challenge();
+
+
+        var link = await linkService.GetLinkAsync(id, userId, cancellationToken);
+
+        if (link is null)
+            return NotFound();
+
+        if (link.ExpiresAt.HasValue && link.ExpiresAt.Value <= DateTime.UtcNow)
+        {
+            TempData["ErrorMessage"] = "This link has expired. Change its expiration before enabling it.";
+            return RedirectToAction(nameof(Edit), new { id = link.Id });
+        }
+
+
+        link.IsActive = true;
+        await linkService.UpdateLinkAsync(link, cancellationToken);
+
+        TempData["SuccessMessage"] = "The link has been enabled.";
+
+        return RedirectToAction(nameof(Index));
     }
 
     public IActionResult Delete()
