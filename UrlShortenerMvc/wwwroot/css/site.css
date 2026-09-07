@@ -83,6 +83,69 @@ a {
   color: #fff !important;
   background: #273142;
 }
+
+/* ========================================================= RESPONSIVE NAVBAR ========================================================= */
+
+.navbar-toggler {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 7px 10px;
+  box-shadow: none !important;
+}
+
+.navbar-toggler:focus {
+  box-shadow: 0 0 0 3px rgba(109, 93, 252, 0.15) !important;
+}
+
+/* Mobile */
+@media (max-width: 575px) {
+  .navbar-collapse {
+    padding: 12px 0 16px;
+  }
+
+  .navbar-nav {
+    width: 100%;
+    align-items: center !important;
+    text-align: center;
+  }
+
+  .navbar-nav .nav-item {
+    width: 100%;
+  }
+
+  .navbar-nav .nav-link {
+    display: block;
+    width: 100%;
+    margin: 2px 0;
+    padding: 10px 4px;
+    text-align: center;
+  }
+
+  .navbar-nav .nav-cta {
+    display: inline-block;
+    width: auto;
+    min-width: 130px;
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  .navbar-nav form {
+    width: 100%;
+  }
+
+  .navbar-nav form .nav-link {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* Desktop */
+@media (min-width: 575px) {
+  .navbar-toggler {
+    display: none;
+  }
+}
+
 /* ========================================================= MAIN ========================================================= */
 main {
   overflow: hidden;

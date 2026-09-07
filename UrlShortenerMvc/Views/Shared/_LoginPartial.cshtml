@@ -4,20 +4,24 @@
 @if (SignInManager.IsSignedIn(User))
 {
     <li class="nav-item">
+        @{
+            var userName = User.Identity?.Name ?? "";
+            var displayName = userName.Length > 15 ? userName[..15] + ".." : userName;
+        }
         <a class="nav-link" asp-area="Identity" asp-page="/Account/Manage/Index" title="Manage">
-            Hi, @User.Identity?.Name
+            Hi, @displayName
         </a>
-
     </li>
     <li class="nav-item">
-        <a asp-controller="Links" asp-action="Index" class="nav-link">
+        <a class="nav-link"
+           asp-controller="Links"
+           asp-action="Index">
             My Links
         </a>
     </li>
     <li class="nav-item">
-        <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout"
+        <form asp-area="Identity" asp-page="/Account/Logout"
               asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
-
             <button type="submit" class="nav-link btn btn-link">
                 Logout
             </button>
@@ -27,13 +31,9 @@
 else
 {
     <li class="nav-item">
-        <a class="nav-link" asp-area="Identity" asp-page="/Account/Login">
-            Login
-        </a>
+        <a class="nav-link" asp-area="Identity" asp-page="/Account/Login">Login</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link nav-cta" asp-area="Identity" asp-page="/Account/Register">
-            Get started
-        </a>
+        <a class="nav-link nav-cta" asp-area="Identity" asp-page="/Account/Register">Get started</a>
     </li>
 }
