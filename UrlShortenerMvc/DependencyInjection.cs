@@ -28,6 +28,12 @@ public static class DependencyInjection
             .AddEntityFrameworkStores<ApplicationDbContext>();
         services.AddTransient<IEmailSender, BrevoEmailSender>();
 
+        services.AddAuthentication().AddGoogle(options =>
+        {
+            options.ClientId = configuration["Authentication:Google:ClientId"]!;
+            options.ClientSecret = configuration["Authentication:Google:ClientSecret"]!;
+        });
+
         services.AddControllersWithViews();
 
         services.AddStackExchangeRedisCache(options =>
