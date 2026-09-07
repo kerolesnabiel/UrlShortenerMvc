@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using UrlShortenerMvc.Data;
 using UrlShortenerMvc.Models;
@@ -18,8 +19,15 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
         services.AddDatabaseDeveloperPageExceptionFilter();
 
-        services.AddDefaultIdentity<User>(options => options.SignIn.RequireConfirmedAccount = true)
+        services.AddDefaultIdentity<User>(options =>
+            {
+                options.SignIn.RequireConfirmedAccount = true;
+                options.SignIn.RequireConfirmedEmail = true;
+                options.User.RequireUniqueEmail = true;
+            })
             .AddEntityFrameworkStores<ApplicationDbContext>();
+        services.AddTransient<IEmailSender, BrevoEmailSender>();
+
         services.AddControllersWithViews();
 
         services.AddStackExchangeRedisCache(options =>
