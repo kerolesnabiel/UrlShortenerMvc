@@ -29,6 +29,10 @@
 
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true"/>
+    @if (ViewContext.RouteData.Values["area"]?.ToString() == "Identity")
+    {
+        <link rel="stylesheet" href="~/css/identity.css" asp-append-version="true"/>
+    }
     @await RenderSectionAsync("Styles", required: false)
 </head>
 
