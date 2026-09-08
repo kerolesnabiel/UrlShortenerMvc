@@ -12,7 +12,8 @@ namespace UrlShortenerMvc;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddServices(this IServiceCollection services,
+        IConfiguration configuration, IHostEnvironment environment)
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection") ??
                                throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
@@ -40,19 +41,22 @@ public static class DependencyInjection
         {
             options.InstanceName = "UrlShortener:";
 
-            // For Local Dev
-            // options.Configuration = configuration.GetConnectionString("Redis");
-
-            // For Production
-            var redis = configuration.GetSection("Redis");
-            options.ConfigurationOptions = new StackExchange.Redis.ConfigurationOptions
+            if (environment.IsDevelopment())
             {
-                EndPoints = { redis["Endpoint"]! },
-                User = redis["Username"],
-                Password = redis["Password"],
-                Ssl = true,
-                AbortOnConnectFail = false
-            };
+                options.Configuration = configuration.GetConnectionString("Redis");
+            }
+            else
+            {
+                var redis = configuration.GetSection("Redis");
+                options.ConfigurationOptions = new StackExchange.Redis.ConfigurationOptions
+                {
+                    EndPoints = { redis["Endpoint"]! },
+                    User = redis["Username"],
+                    Password = redis["Password"],
+                    Ssl = true,
+                    AbortOnConnectFail = false
+                };
+            }
         });
 
         services.Configure<ForwardedHeadersOptions>(options =>
@@ -79,7 +83,7 @@ public static class DependencyInjection
                     $"global:{ip}",
                     _ => new FixedWindowRateLimiterOptions
                     {
-                        PermitLimit = 300,
+                        PermitLimit = 120,
                         Window = TimeSpan.FromMinutes(1),
                         QueueLimit = 0
                     });
@@ -120,7 +124,7 @@ public static class DependencyInjection
                     $"redirect:{ip}",
                     _ => new FixedWindowRateLimiterOptions
                     {
-                        PermitLimit = 120,
+                        PermitLimit = 60,
                         Window = TimeSpan.FromMinutes(1),
                         QueueLimit = 0
                     });
